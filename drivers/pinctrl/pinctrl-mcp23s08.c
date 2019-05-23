@@ -832,6 +832,7 @@ static int mcp23s08_probe_one(struct mcp23s08 *mcp, struct device *dev,
 	else if (mcp->pinctrl_desc.npins == 16)
 		mcp->pinctrl_desc.pins = mcp23x17_pins;
 	mcp->pinctrl_desc.owner = THIS_MODULE;
+	mcp->pinctrl_desc.link_consumers = true;
 
 	mcp->pctldev = devm_pinctrl_register(dev, &mcp->pinctrl_desc, mcp);
 	if (IS_ERR(mcp->pctldev)) {
