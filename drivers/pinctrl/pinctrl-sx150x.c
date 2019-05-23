@@ -1146,6 +1146,7 @@ static int sx150x_probe(struct i2c_client *client,
 	pctl->pinctrl_desc.pins = pctl->data->pins;
 	pctl->pinctrl_desc.npins = pctl->data->npins;
 	pctl->pinctrl_desc.owner = THIS_MODULE;
+	pctl->pinctrl_desc.link_consumers = true;
 
 	ret = devm_pinctrl_register_and_init(dev, &pctl->pinctrl_desc,
 					     pctl, &pctl->pctldev);
