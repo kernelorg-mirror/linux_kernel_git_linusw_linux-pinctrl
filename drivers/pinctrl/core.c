@@ -1001,6 +1001,26 @@ static int add_setting(struct pinctrl *p, struct pinctrl_dev *pctldev,
 
 	list_add_tail(&setting->node, &state->settings);
 
+	/*
+	 * Set up a device link for power management.
+	 * Do not link hogs (circular dependency)
+	 * Do not create more than one link per pinctrl.
+	 */
+	if (p->dev != setting->pctldev->dev) {
+		/*
+		 * Create a device link to the consumer such that
+		 * it will enforce that runtime PM suspend/resume
+		 * is done first on consumers before we get to
+		 * the pin controller itself. As some devices get
+		 * their pin control state even before probe() it is
+		 * important to use DL_FLAG_AUTOREMOVE_CONSUMER.
+		 */
+		setting->dl = device_link_add(p->dev,
+					      setting->pctldev->dev,
+					      DL_FLAG_PM_RUNTIME |
+					      DL_FLAG_AUTOREMOVE_CONSUMER);
+	}
+
 	return 0;
 }
 
@@ -1136,6 +1156,8 @@ EXPORT_SYMBOL_GPL(pinctrl_get);
 static void pinctrl_free_setting(bool disable_setting,
 				 struct pinctrl_setting *setting)
 {
+	if (setting->dl)
+		device_link_del(setting->dl);
 	switch (setting->type) {
 	case PIN_MAP_TYPE_MUX_GROUP:
 		if (disable_setting)
@@ -1221,15 +1243,6 @@ struct pinctrl_state *pinctrl_lookup_state(struct pinctrl *p,
 }
 EXPORT_SYMBOL_GPL(pinctrl_lookup_state);
 
-static void pinctrl_link_add(struct pinctrl_dev *pctldev,
-			     struct device *consumer)
-{
-	if (pctldev->desc->link_consumers)
-		device_link_add(consumer, pctldev->dev,
-				DL_FLAG_PM_RUNTIME |
-				DL_FLAG_AUTOREMOVE_CONSUMER);
-}
-
 /**
  * pinctrl_commit_state() - select/activate/program a pinctrl state to HW
  * @p: the pinctrl handle for the device that requests configuration
@@ -1275,10 +1288,6 @@ static int pinctrl_commit_state(struct pinctrl *p, struct pinctrl_state *state)
 		if (ret < 0) {
 			goto unapply_new_state;
 		}
-
-		/* Do not link hogs (circular dependency) */
-		if (p != setting->pctldev->p)
-			pinctrl_link_add(setting->pctldev, p->dev);
 	}
 
 	p->state = state;

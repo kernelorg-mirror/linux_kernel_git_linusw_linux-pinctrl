@@ -11,6 +11,7 @@
 #include <linux/kref.h>
 #include <linux/mutex.h>
 #include <linux/radix-tree.h>
+#include <linux/device.h>
 #include <linux/pinctrl/pinconf.h>
 #include <linux/pinctrl/machine.h>
 
@@ -126,6 +127,7 @@ struct pinctrl_setting_configs {
  * @pctldev: pin control device handling to be programmed. Not used for
  *   PIN_MAP_TYPE_DUMMY_STATE.
  * @dev_name: the name of the device using this state
+ * @dl: device link for power management
  * @data: Data specific to the setting type
  */
 struct pinctrl_setting {
@@ -133,6 +135,7 @@ struct pinctrl_setting {
 	enum pinctrl_map_type type;
 	struct pinctrl_dev *pctldev;
 	const char *dev_name;
+	struct device_link *dl;
 	union {
 		struct pinctrl_setting_mux mux;
 		struct pinctrl_setting_configs configs;
