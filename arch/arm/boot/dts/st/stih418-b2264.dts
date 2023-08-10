@@ -82,7 +82,7 @@
 			};
 		};
 
-		pin-controller-sbc@961f080 {
+		pinctrl@961f080 {
 			gmac1 {
 				rgmii1-0 {
 					st,pins {
